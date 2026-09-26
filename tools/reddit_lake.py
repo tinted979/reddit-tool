@@ -23,8 +23,10 @@ decompress is reported and left out, and the rest go in.
 
 `extract` writes r_<Name>_posts.jsonl and r_<Name>_comments.jsonl for each subreddit: the
 shape Arctic Shift's download tool gives, which tools/build_dumps.py reads. It refuses a lake
-with a month missing between its first and last, so no gap reaches the archive, and warns
-when a subreddit's history may start before the lake's first month.
+with a month missing between its first and last, so no gap reaches the archive. It also
+refuses a subreddit with items in the lake's first month, whose history may start earlier (a
+build records where it ends, not where it starts), unless --allow-partial-history says it began
+then.
 
 `status` says what's in the lake, what's downloaded but not converted, what's still
 downloading, and with --releases, which released months aren't downloaded, with magnet links
@@ -420,9 +422,13 @@ def gaps(state: dict) -> list[str]:
     return problems
 
 
-def extract(root: Path, names: list[str], out: Path, *, log=print) -> int:
+def extract(root: Path, names: list[str], out: Path, *, log=print, allow_partial_history: bool = False) -> int:
     """Writes r_<Name>_posts.jsonl and r_<Name>_comments.jsonl for each subreddit into `out`.
-    Returns 0, 1 if a subreddit has nothing in the lake, or 2 if the lake has a gap."""
+    Returns 0; 1 if a subreddit has nothing in the lake; or 2 if the lake has a gap, or a
+    subreddit has items in the lake's first month, so its history may start earlier. An archive
+    build records where it ends, not where it starts, so a build missing its early months would
+    pass for complete. `allow_partial_history` lets such a subreddit through (one that really
+    began that month), with a warning."""
     bad = [n for n in names if not SUBREDDIT.match(n)]
     if bad:
         raise ValueError(f"not subreddit names: {bad}")
@@ -442,7 +448,7 @@ def extract(root: Path, names: list[str], out: Path, *, log=print) -> int:
         globs = [f"'{posix(lake / kind / m)}/part-*.parquet'" for m in months if state["months"][m][kind]["parts"]]
         sources[kind] = f"read_parquet([{', '.join(globs)}])" if globs else None
     out.mkdir(parents=True, exist_ok=True)
-    missing = False
+    missing = refused = False
     for name in names:
         key = name.lower()
         counts = {}
@@ -457,6 +463,15 @@ def extract(root: Path, names: list[str], out: Path, *, log=print) -> int:
         union = " UNION ALL ".join(f"SELECT subreddit FROM {src} WHERE subreddit_key = '{key}'"
                                    for src in sources.values() if src)
         spelled = con.execute(f"SELECT subreddit FROM ({union}) GROUP BY 1 ORDER BY count(*) DESC, 1 LIMIT 1").fetchone()[0]
+        first = min(c[1] for c in counts.values() if c[1] is not None)
+        last = max(c[2] for c in counts.values() if c[2] is not None)
+        early = month_of(first) == months[0] and months[0] != FIRST_MONTH
+        if early and not allow_partial_history:
+            log(f"error: r/{spelled} has items in {months[0]}, the lake's first month, so its history may start "
+                "earlier: download and convert older months, then extract again (or pass --allow-partial-history "
+                f"if r/{spelled} began in {months[0]}). Its files weren't written.")
+            refused = True
+            continue
         written = []
         for kind, src in sources.items():
             dest = out / f"r_{spelled}_{kind}.jsonl"
@@ -468,14 +483,12 @@ def extract(root: Path, names: list[str], out: Path, *, log=print) -> int:
                 tmp.write_text("", encoding="utf-8")
             os.replace(tmp, dest)
             written.append(dest.name)
-        first = min(c[1] for c in counts.values() if c[1] is not None)
-        last = max(c[2] for c in counts.values() if c[2] is not None)
         log(f"r/{spelled}: {counts['posts'][0]:,} posts and {counts['comments'][0]:,} comments, "
             f"{month_of(first)} to {month_of(last)}: {', '.join(written)}")
-        if month_of(first) == months[0] and months[0] != FIRST_MONTH:
-            log(f"warning: r/{spelled} has items in {months[0]}, the lake's first month, so its history may "
-                "start earlier: download and convert older months, then extract again")
-    return 1 if missing else 0
+        if early:
+            log(f"warning: r/{spelled} has items in {months[0]}, the lake's first month; written anyway "
+                "(--allow-partial-history), as if it began then")
+    return 2 if refused else 1 if missing else 0
 
 
 # status --------------------------------------------------------------------------------------
@@ -569,6 +582,8 @@ def main(argv: list[str] | None = None) -> int:
     e = sub.add_parser("extract", help="write r_<Name>_posts.jsonl and r_<Name>_comments.jsonl for subreddits")
     e.add_argument("--subreddits", type=_subreddits, required=True, help="comma-separated names")
     e.add_argument("--out", type=Path, required=True, help="where to write the JSONL files")
+    e.add_argument("--allow-partial-history", action="store_true",
+                   help="write a subreddit with items in the lake's first month anyway (it began then)")
     for p in (s, u, e):
         p.add_argument("--root", type=Path, required=True, help="the folder holding raw/ and lake/")
     args = parser.parse_args(argv)
@@ -585,7 +600,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.chunk_mb < 1:
             parser.error("--chunk-mb must be at least 1")
         return update(args.root, month=args.month, chunk_bytes=args.chunk_mb << 20, memory_limit=args.memory_limit)
-    return extract(args.root, args.subreddits, args.out)
+    return extract(args.root, args.subreddits, args.out, allow_partial_history=args.allow_partial_history)
 
 
 if __name__ == "__main__":

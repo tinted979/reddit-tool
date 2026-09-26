@@ -219,7 +219,7 @@ def read_jsonl(path):
 def test_extract_writes_each_subreddit_in_the_download_tools_shape(root, tmp_path):
     assert update(root)[0] == 0
     out = tmp_path / "out"
-    code, log = extract(root, ["socialism_101", "RUST"], out)
+    code, log = extract(root, ["socialism_101", "RUST"], out, allow_partial_history=True)
     assert code == 0, lines(log)
     # Named as the subreddit spells itself, like the download tool's files.
     assert sorted(p.name for p in out.iterdir()) == [
@@ -253,16 +253,29 @@ def test_extract_refuses_a_lake_with_a_gap(root, tmp_path):
     assert code == 2 and "2026-02 has comments but no posts" in lines(log)
 
 
-def test_extract_warns_when_a_subreddits_history_may_start_before_the_lake(root, tmp_path):
-    assert update(root)[0] == 0
-    code, log = extract(root, ["rust"], tmp_path / "out")
-    assert code == 0
-    assert "r/rust has items in 2026-01, the lake's first month" in lines(log)
+def test_extract_refuses_a_subreddit_whose_history_may_start_before_the_lake(tmp_path):
+    # The archive's manifest records where a build ends, not where it starts, so a build missing
+    # a subreddit's early months would pass for complete. r/rust has items in the lake's first
+    # month, 2026-01; r/fresh starts in 2026-02, so it's whole.
+    dump(tmp_path / "raw" / "RC_2026-01.zst", [comment(1, "rust", "a", JAN)])
+    dump(tmp_path / "raw" / "RS_2026-01.zst", [post(1, "rust", "a", JAN)])
+    dump(tmp_path / "raw" / "RC_2026-02.zst", [comment(2, "rust", "a", FEB), comment(3, "fresh", "b", FEB)])
+    dump(tmp_path / "raw" / "RS_2026-02.zst", [post(2, "fresh", "b", FEB)])
+    assert update(tmp_path)[0] == 0
+    out = tmp_path / "out"
+    code, log = extract(tmp_path, ["rust", "fresh"], out)
+    assert code == 2
+    assert "r/rust has items in 2026-01, the lake's first month" in lines(log) and "--allow-partial-history" in lines(log)
+    assert sorted(p.name for p in out.iterdir()) == ["r_fresh_comments.jsonl", "r_fresh_posts.jsonl"]
+    # When the subreddit really began then, the flag lets it through, with a warning.
+    code, log = extract(tmp_path, ["rust"], out, allow_partial_history=True)
+    assert code == 0 and "warning: r/rust has items in 2026-01" in lines(log)
+    assert (out / "r_rust_comments.jsonl").exists()
 
 
 def test_extract_reports_a_subreddit_with_nothing_in_the_lake(root, tmp_path):
     assert update(root)[0] == 0
-    code, log = extract(root, ["rust", "NoSuchSub"], tmp_path / "out")
+    code, log = extract(root, ["rust", "NoSuchSub"], tmp_path / "out", allow_partial_history=True)
     assert code == 1 and "r/NoSuchSub: nothing in the lake" in lines(log)
     assert (tmp_path / "out" / "r_rust_posts.jsonl").exists()
 

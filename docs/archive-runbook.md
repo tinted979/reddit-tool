@@ -60,7 +60,7 @@ The build job's summary has:
   - That's a lot of requests to a free service, so import anything big instead.
 - **A big one** (r/Hasan_Piker's history is about 16k pages): import it.
   1. Get its posts and comments as JSONL, either:
-     - **from the lake** (below), in minutes and with no requests to Arctic Shift: `uv run tools/reddit_lake.py extract --root F:/reddit --subreddits Name --out F:/new_dumps`. It refuses a lake with a month missing, and warns if the subreddit's history may start before the lake's first month;
+     - **from the lake** (below), in minutes and with no requests to Arctic Shift: `uv run tools/reddit_lake.py extract --root F:/reddit --subreddits Name --out F:/new_dumps`. It refuses a lake with a month missing, and a subreddit with items in the lake's first month, since its history may start earlier: convert older months first, or pass `--allow-partial-history` if it began that month;
      - **or with Arctic Shift's download tool** (https://arctic-shift.photon-reddit.com/download-tool), which pages the API: hours for a big subreddit.
   2. `uv run tools/build_dumps.py --subreddit Name --posts r_Name_posts.jsonl --comments r_Name_comments.jsonl --out dumps-new`
   3. `tools/upload_dumps.sh dumps-new --only name`. This publishes just that subreddit into the live manifest, and every other entry stays as it is.

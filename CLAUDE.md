@@ -51,7 +51,7 @@ Detail for each module loads from `.claude/rules/` when you open its files. Ever
 
 - **`core.js`:** `ArcticShiftClient` (pacing, AIMD backoff, `meta-app`), commenters, a covered subreddit's tail (`fetchTails`, once per scan), `buildProfile` (lifetime counts and "before" facts, from the API or the archive), badges, scan estimates, CSV and saved-scan files, `Eta`. No DOM. (`web-core.md`, and the verified API behaviour in `arctic-shift-api.md`.)
 - **`cache.js`:** IndexedDB `reddit-tool` with the `counts` (`ProfileCache`) and `scans` (`ScanStore`) stores; **`queue.js`:** `LinkQueue` in localStorage, run by one tab at a time. (`web-storage.md`.)
-- **`dumps.js`:** `DumpSource`, the per-subreddit Parquet archive on R2, read with hyparquet range requests, and `TailStore`, the tab's tails of activity after the files end; **`hyparquet.js`:** a saved copy, never edited; **`tools/`:** fetches for, builds, uploads and checks the archive, and keeps a local lake of the monthly dumps it can be built from, which `archive-sync.yml` keeps current, each subreddit on its cadence in `tools/archive.json` (`docs/archive-runbook.md`). (`archive.md`.)
+- **`dumps.js`:** `DumpSource`, the per-subreddit Parquet archive on R2, read with hyparquet range requests, and `TailStore`, the tab's tails of activity after the files end; **`hyparquet.js`:** a saved copy, never edited; **`tools/`:** fetches for, builds, uploads and checks the archive, which `archive-sync.yml` keeps current, each subreddit on its cadence in `tools/archive.json`, and keeps a local lake of the monthly dumps that imports are built from (`docs/archive-runbook.md`, docs/adr/0008). (`archive.md`.)
 - **`options.js`** (scan options and share links), **`format.js`** (text helpers), **`app.js`** (the DOM only: runs, cards, the scheduler, saved scans). (`web-app.md`.)
 
 ## Rules for changes
@@ -72,5 +72,5 @@ The AI pull request reviewers (`.github/workflows/agent-review.yml`, roles in `.
 ## Backlog and decisions
 
 - Known debt is GitHub issues labelled `debt`; agent findings are labelled `agent:finding`. Before refactoring or cleanup, check whether an issue covers it, and close it from the PR (`Closes #N`). File newly found debt as a `debt` issue.
-- Lasting decisions are in `docs/adr/` (no build step or dependencies, Arctic Shift etiquette, frozen storage names, the static archive and its scheduled sync, every count stopping at the post, one `interactions` query for lifetime counts); the `adr` skill says how to add one.
+- Lasting decisions are in `docs/adr/` (no build step or dependencies, Arctic Shift etiquette, frozen storage names, the static archive and its scheduled sync, every count stopping at the post, one `interactions` query for lifetime counts, imports from a local lake of the monthly dumps); the `adr` skill says how to add one.
 - Live browser checks: the `live-browser-test` skill.
