@@ -2,7 +2,7 @@
 (docs/adr/0005). rclone and curl are fakes passed in RCLONE and CURL (never put on PATH):
 the bucket is a local directory, and each call is logged. Run from the repo root:
 
-  uv run --with duckdb --with pytest pytest tools
+  uv run --with duckdb --with pytest --with zstandard pytest tools
 """
 
 import json

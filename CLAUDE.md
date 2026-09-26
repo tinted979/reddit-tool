@@ -23,12 +23,14 @@ tools/upload_dumps.sh [dumps] [--drop KEY]   # check against what's live, upload
 tools/upload_dumps.sh [dumps] --only KEY [--allow-older]   # just r/KEY's build, into the live manifest (merge-one, then publish_build.sh): other subreddits stay as they're live
 uv run tools/check_upload.py merge-one --key x --dumps dumps --live live.json --log published.json --out bundle   # one subreddit's build, merged into the live manifest and checked, ready to publish (no token)
 tools/publish_build.sh bundle   # publish that bundle to R2: the one step that holds the token (rclone, curl and sha256sum only)
+uv run tools/reddit_lake.py update --root F:/reddit   # convert newly downloaded monthly dumps (raw/) into the lake (lake/); status [--releases] says what's there and what to download
+uv run tools/reddit_lake.py extract --root F:/reddit --subreddits X,Y --out DIR   # a subreddit's posts and comments from the lake as JSONL, for build_dumps.py (local, no API)
 uv run tools/archive_sync.py plan   # which subreddits in tools/archive.json are due for the archive sync (reads the public archive only)
 uv run tools/archive_sync.py build --out DIR [--only X]   # the sync's build job: fetch, splice, and bundles in DIR/bundles for publish_build.sh (fetches call the live API: not from tests or agents)
 tools/check_dumps.sh [all|manifest|cors|files]  # check the live archive serves the page right (no credentials; CI runs it weekly and after each sync publish)
 node tools/fetch_subreddit.mjs --subreddit X --kind comments --after <epoch> --budget 50 --out c.jsonl --result c.json   # the sync's fetcher (calls the live API: never from tests or agents)
 node tools/lifetime_bench.mjs --post <url> [--out bench.json]   # P8: one interactions query vs the two aggregates, per commenter (calls the live API: the owner runs it)
-uv run --with duckdb --with pytest pytest tools   # dump tool tests (CI runs them too)
+uv run --with duckdb --with pytest --with zstandard pytest tools   # dump tool tests (CI runs them too)
 bash .github/scripts/rule-guards.sh              # the Rules for changes a grep can decide (CI runs it)
 node --test .github/scripts/tests/*.test.mjs      # tests of the CI scripts
 node web/bench/scan-bench.mjs [--base <git-ref>]   # offline scan benchmark: requests by endpoint, archive reads/bytes, simulated seconds; no network
@@ -49,7 +51,7 @@ Detail for each module loads from `.claude/rules/` when you open its files. Ever
 
 - **`core.js`:** `ArcticShiftClient` (pacing, AIMD backoff, `meta-app`), commenters, a covered subreddit's tail (`fetchTails`, once per scan), `buildProfile` (lifetime counts and "before" facts, from the API or the archive), badges, scan estimates, CSV and saved-scan files, `Eta`. No DOM. (`web-core.md`, and the verified API behaviour in `arctic-shift-api.md`.)
 - **`cache.js`:** IndexedDB `reddit-tool` with the `counts` (`ProfileCache`) and `scans` (`ScanStore`) stores; **`queue.js`:** `LinkQueue` in localStorage, run by one tab at a time. (`web-storage.md`.)
-- **`dumps.js`:** `DumpSource`, the per-subreddit Parquet archive on R2, read with hyparquet range requests, and `TailStore`, the tab's tails of activity after the files end; **`hyparquet.js`:** a saved copy, never edited; **`tools/`:** fetches for, builds, uploads and checks the archive, which `archive-sync.yml` keeps current, each subreddit on its cadence in `tools/archive.json` (`docs/archive-runbook.md`). (`archive.md`.)
+- **`dumps.js`:** `DumpSource`, the per-subreddit Parquet archive on R2, read with hyparquet range requests, and `TailStore`, the tab's tails of activity after the files end; **`hyparquet.js`:** a saved copy, never edited; **`tools/`:** fetches for, builds, uploads and checks the archive, which `archive-sync.yml` keeps current, each subreddit on its cadence in `tools/archive.json`, and keeps a local lake of the monthly dumps that imports are built from (`docs/archive-runbook.md`, docs/adr/0008). (`archive.md`.)
 - **`options.js`** (scan options and share links), **`format.js`** (text helpers), **`app.js`** (the DOM only: runs, cards, the scheduler, saved scans). (`web-app.md`.)
 
 ## Rules for changes
@@ -70,5 +72,5 @@ The AI pull request reviewers (`.github/workflows/agent-review.yml`, roles in `.
 ## Backlog and decisions
 
 - Known debt is GitHub issues labelled `debt`; agent findings are labelled `agent:finding`. Before refactoring or cleanup, check whether an issue covers it, and close it from the PR (`Closes #N`). File newly found debt as a `debt` issue.
-- Lasting decisions are in `docs/adr/` (no build step or dependencies, Arctic Shift etiquette, frozen storage names, the static archive and its scheduled sync, every count stopping at the post, one `interactions` query for lifetime counts); the `adr` skill says how to add one.
+- Lasting decisions are in `docs/adr/` (no build step or dependencies, Arctic Shift etiquette, frozen storage names, the static archive and its scheduled sync, every count stopping at the post, one `interactions` query for lifetime counts, imports from a local lake of the monthly dumps); the `adr` skill says how to add one.
 - Live browser checks: the `live-browser-test` skill.

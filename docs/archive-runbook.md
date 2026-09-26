@@ -59,15 +59,35 @@ The build job's summary has:
   - The sync then builds it from its start over several runs, `budget` pages at a time, after the subreddits that are caught up.
   - That's a lot of requests to a free service, so import anything big instead.
 - **A big one** (r/Hasan_Piker's history is about 16k pages): import it.
-  1. Download its posts and comments as JSONL with Arctic Shift's download tool: https://arctic-shift.photon-reddit.com/download-tool.
+  1. Get its posts and comments as JSONL, either:
+     - **from the lake** (below), in minutes and with no requests to Arctic Shift: `uv run tools/reddit_lake.py extract --root F:/reddit --subreddits Name --out F:/new_dumps`. It refuses a lake with a month missing, and a subreddit with items in the lake's first month, since its history may start earlier: convert older months first, or pass `--allow-partial-history` if it began that month;
+     - **or with Arctic Shift's download tool** (https://arctic-shift.photon-reddit.com/download-tool), which pages the API: hours for a big subreddit.
   2. `uv run tools/build_dumps.py --subreddit Name --posts r_Name_posts.jsonl --comments r_Name_comments.jsonl --out dumps-new`
   3. `tools/upload_dumps.sh dumps-new --only name`. This publishes just that subreddit into the live manifest, and every other entry stays as it is.
   4. Add it to `tools/archive.json`, without `backfill`, and merge. The sync takes it on from its cutoff.
+
+  A build from the lake ends where the lake does (the last monthly dump); the sync's first run fetches from there to now, over a few runs if it's weeks behind.
 
   The download tool starts each page at the last item's time. So an item that shares its second with the end of a page can go missing, and the weekly repair only reaches 7 days back. That's a handful of items, too few to change counts.
 - **Stopping one:** take it out of `tools/archive.json`.
   - Its live build then stays in the manifest, still correct up to its cutoff, and the page still uses it for scans before that.
   - To drop it from the manifest too, make a whole upload with `--drop key`, from a directory that holds the live `manifest.json` and every other subreddit's live build. A whole upload refuses a stale build whose cutoff is older than the live one's ("is earlier than the live build's"); `--allow-older` overrides that.
+
+## The monthly dumps (the lake)
+
+Arctic Shift publishes all of Reddit as one torrent a month (https://github.com/ArthurHeitmann/arctic_shift/blob/master/download_links.md): `RC_YYYY-MM.zst` (comments) and `RS_YYYY-MM.zst` (posts), about 75 GB a month now, 4.4 TB for 2005 to 2025. `tools/reddit_lake.py` keeps them under one folder (`--root`, F:/reddit for now):
+- **`raw/`:** the dumps as downloaded, in any subfolders. Never changed or deleted: they're the only full copy, and everything else is rebuilt from them.
+- **`lake/`:** each month as Parquet parts sorted by subreddit then time, with the fields worth querying (text included), and `months.json`, what's been converted. A subreddit is then a quick query, never a download.
+
+**Each month:**
+1. `uv run tools/reddit_lake.py status --root F:/reddit --releases` lists the released months you haven't downloaded, with magnet links. Download them into `raw/`. Months before 2024-04 come only in the combined torrents it lists last; a torrent client can pick single months' files from those.
+2. `uv run tools/reddit_lake.py update --root F:/reddit` converts every downloaded month that isn't in the lake yet: about 35–60 minutes for a recent month (an estimate, to be measured).
+   - It's safe to run again: finished months are skipped, and one cut off partway is redone.
+   - A file that's still downloading, or damaged, is reported and left out ("ends partway through"), and the rest go in. Run it again once the download finishes.
+   - It works in `lake/.tmp` (a few GB), on the lake's drive.
+3. Nothing else: the sync keeps the archived subreddits current from the API. The lake is for adding subreddits, and whatever gets built on it later.
+
+**If something's wrong:** `status` also lists months missing between the first and last (`gap:`), files held twice (keep one), and files still downloading. To redo a month, delete its folders under `lake/comments/` and `lake/posts/` and its entry in `lake/months.json`, then run `update`. A new lake schema (`SCHEMA` in the tool) means moving `lake/` aside and converting again from `raw/`.
 
 ## Forcing a run
 
@@ -113,7 +133,7 @@ With a subreddit named, it builds just that one, due or not. Tick "repair" to re
 - **Actions** in the workflows are pinned to commits, and Dependabot bumps them.
 - **rclone** (the publish job) and **duckdb** (the build job) are pinned in `archive-sync.yml` and bumped by hand.
   - **For rclone,** set `RCLONE_VERSION` and `RCLONE_SHA256`. The checksum is the `rclone-v<version>-linux-amd64.zip` line of the release's SHA256SUMS: `gh release download v<version> -R rclone/rclone -p SHA256SUMS -O -`. Download the zip and check it with `sha256sum` too.
-  - **For duckdb,** set `DUCKDB_VERSION`, and run the tool tests with that version first: `uv run --with "duckdb==<version>" --with pytest pytest tools`.
+  - **For duckdb,** set `DUCKDB_VERSION`, and run the tool tests with that version first: `uv run --with "duckdb==<version>" --with pytest --with zstandard pytest tools`.
 
 ## Updating hyparquet
 

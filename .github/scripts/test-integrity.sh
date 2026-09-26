@@ -14,7 +14,7 @@ git worktree add --detach "$tmp/base" "$base" >/dev/null 2>&1 || { echo "::error
 # that doesn't work: without fake-indexeddb the IndexedDB test file fails to load, and the
 # count would drop. A failing test still counts; checks / test reports failures. NODE_TEST_CONTEXT
 # is unset so a run inside node --test (this script's own tests) still reports TAP.
-PY_DEPS=(--with "duckdb>=1.1,<2" --with pytest)
+PY_DEPS=(--with "duckdb>=1.1,<2" --with pytest --with "zstandard>=0.23,<1")
 count() {   # count KIND DIR: how many node or py tests DIR has
   case "$1" in
     node)
@@ -23,7 +23,7 @@ count() {   # count KIND DIR: how many node or py tests DIR has
       (cd "$2/web" && { env -u NODE_TEST_CONTEXT node --test --test-reporter=tap 2>/dev/null || true; }) |
         awk '/^# tests /{n=$3} END{print n+0}' ;;
     py)
-      (cd "$2" && uv run -q "${PY_DEPS[@]}" python -c "import duckdb, pytest" >/dev/null 2>&1) ||
+      (cd "$2" && uv run -q "${PY_DEPS[@]}" python -c "import duckdb, pytest, zstandard" >/dev/null 2>&1) ||
         { echo "::error::uv couldn't set up the Python tests in $2, so they can't be counted." >&2; return 1; }
       (cd "$2" && { uv run -q "${PY_DEPS[@]}" pytest tools --collect-only -q 2>/dev/null || true; }) |
         awk '/tests? collected/{n=$1} END{print n+0}' ;;

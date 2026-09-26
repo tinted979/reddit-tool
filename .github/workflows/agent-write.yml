@@ -101,7 +101,7 @@ jobs:
       - name: Python for the dump tool tests (python -m pytest)
         run: |
           uv venv --python 3.12 "$RUNNER_TEMP/py"
-          uv pip install --python "$RUNNER_TEMP/py" "duckdb>=1.1,<2" pytest
+          uv pip install --python "$RUNNER_TEMP/py" "duckdb>=1.1,<2" pytest "zstandard>=0.23,<1"
           echo "$RUNNER_TEMP/py/bin" >> "$GITHUB_PATH"
       - name: Install bubblewrap and socat (the env scrub's subprocess sandbox needs both)
         run: |
@@ -196,7 +196,7 @@ jobs:
       - name: Python for the dump tool tests (python -m pytest)
         run: |
           uv venv --python 3.12 "$RUNNER_TEMP/py"
-          uv pip install --python "$RUNNER_TEMP/py" "duckdb>=1.1,<2" pytest
+          uv pip install --python "$RUNNER_TEMP/py" "duckdb>=1.1,<2" pytest "zstandard>=0.23,<1"
           echo "$RUNNER_TEMP/py/bin" >> "$GITHUB_PATH"
       # No prompt: tag mode. The action reads the owner's comment, checks out the PR branch and
       # pushes follow-up commits to it. Only the owner's and the reviewers' (github-actions[bot])

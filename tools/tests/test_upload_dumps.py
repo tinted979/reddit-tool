@@ -4,7 +4,7 @@ rclone, curl and check_dumps.sh are fakes passed in RCLONE, CURL and CHECK_DUMPS
 PATH); the bucket, which the public URL serves too, is a local directory. Run from the repo
 root:
 
-  uv run --with duckdb --with pytest pytest tools
+  uv run --with duckdb --with pytest --with zstandard pytest tools
 """
 
 import json

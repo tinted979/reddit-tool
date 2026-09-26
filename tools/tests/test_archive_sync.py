@@ -3,7 +3,7 @@ subreddits are due, and the bundles it makes for tools/publish_build.sh. Downloa
 fake public URL and fetches from a fake fetcher, so nothing here reaches the network. Run from
 the repo root:
 
-  uv run --with duckdb --with pytest pytest tools
+  uv run --with duckdb --with pytest --with zstandard pytest tools
 """
 
 import hashlib

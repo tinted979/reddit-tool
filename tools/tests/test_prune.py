@@ -3,7 +3,7 @@ plans it from the subreddit's publish log, and tools/publish_build.sh deletes af
 A build goes only once the publish that replaced it is PRUNE_AFTER old, never while a manifest
 names it, and never if the log doesn't know it. Run from the repo root:
 
-  uv run --with duckdb --with pytest pytest tools
+  uv run --with duckdb --with pytest --with zstandard pytest tools
 """
 
 import json
