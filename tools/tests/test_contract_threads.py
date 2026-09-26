@@ -2,7 +2,7 @@
 comments_by_link must be what tools/build_dumps.py writes (see test_contract.py for the
 by-author files).
 
-Run from the repo root:  uv run --with duckdb --with pytest pytest tools
+Run from the repo root:  uv run --with duckdb --with pytest --with zstandard pytest tools
 """
 
 import re

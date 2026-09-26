@@ -275,7 +275,7 @@ scan's cost can be checked against what it should have asked.
 
 ```sh
 cd web && npm ci && npm test   # web app tests (Node 22+; npm ci installs the one test-only dependency)
-uv run --with duckdb --with pytest pytest tools   # archive tool tests (build, splice, sync, upload, publish)
+uv run --with duckdb --with pytest --with zstandard pytest tools   # archive tool tests (build, splice, sync, upload, publish)
 ```
 
 To try the web app locally, serve `web/` with any static server (ES modules don't load
@@ -302,6 +302,8 @@ publishes the new one, manifest last, and it deletes builds replaced at least 72
 before (docs/adr/0005). Only its `publish` job holds the R2 token. How to run, pause and
 repair it is in [docs/archive-runbook.md](docs/archive-runbook.md).
 
+A subreddit's history comes from `tools/reddit_lake.py`, a local copy of Arctic Shift's
+monthly dumps of all of Reddit that's quick to query (or from Arctic Shift's download tool).
 Builds made by hand (a first import, say) use `tools/build_dumps.py` and
 `tools/upload_dumps.sh`. It first checks the upload against what's live
 (`tools/check_upload.py`: no live subreddit dropped, no build directory reused), then checks

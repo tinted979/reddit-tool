@@ -1,7 +1,7 @@
 """Tests for how tools/build_dumps.py configures DuckDB: where it spills, how much memory
 it may use and whether it keeps insertion order (issue #54). Run from the repo root:
 
-  uv run --with duckdb --with pytest pytest tools
+  uv run --with duckdb --with pytest --with zstandard pytest tools
 """
 
 import json

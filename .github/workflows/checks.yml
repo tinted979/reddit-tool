@@ -44,7 +44,7 @@ jobs:
           enable-cache: false # no cache to poison: nothing restored, nothing saved
       - name: Dump tool tests
         # The command in CLAUDE.md, with duckdb kept below its next major version.
-        run: uv run --python 3.12 --with "duckdb>=1.1,<2" --with pytest pytest tools -q
+        run: uv run --python 3.12 --with "duckdb>=1.1,<2" --with pytest --with "zstandard>=0.23,<1" pytest tools -q
       - name: Rule guards (CLAUDE.md rules a grep can decide)
         run: bash .github/scripts/rule-guards.sh
       - name: Tests of the CI scripts

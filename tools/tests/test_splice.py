@@ -3,7 +3,7 @@
 A splice keeps the live build's rows up to a cut, adds the rows fetched after it
 (tools/fetch_subreddit.mjs), and records how far each kind is complete. Run from the repo root:
 
-  uv run --with duckdb --with pytest pytest tools
+  uv run --with duckdb --with pytest --with zstandard pytest tools
 """
 
 import json

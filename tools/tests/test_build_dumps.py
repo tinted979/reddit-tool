@@ -1,6 +1,6 @@
 """Tests for tools/build_dumps.py. Run from the repo root:
 
-  uv run --with duckdb --with pytest pytest tools
+  uv run --with duckdb --with pytest --with zstandard pytest tools
 """
 
 import json

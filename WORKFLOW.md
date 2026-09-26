@@ -808,7 +808,7 @@ Revisit `gh aw` when it's GA or if you move to API billing.
 >
 > - **Web tests need `npm ci` first.** `fake-indexeddb` is the web tests' one dev dependency, so every job that runs `npm test` (including both sides of `test-integrity.sh`) runs `npm ci` first. `setup-node` has no dependency cache.
 > - **The no-dependencies guard** fails on any `dependencies` and on any `devDependencies` other than `fake-indexeddb`.
-> - **Checks kept from `pages.yml`:** the "local files load only as `from \"./x.js\"`" grep (now in `rule-guards.sh`) and `shellcheck` (now on `.github/scripts/*.sh` too). Python tests run with `uv run --with "duckdb>=1.1,<2" --with pytest`, as in CLAUDE.md, not pip. Node comes from `web/.nvmrc`.
+> - **Checks kept from `pages.yml`:** the "local files load only as `from \"./x.js\"`" grep (now in `rule-guards.sh`) and `shellcheck` (now on `.github/scripts/*.sh` too). Python tests run with `uv run --with "duckdb>=1.1,<2" --with pytest --with "zstandard>=0.23,<1"`, as in CLAUDE.md, not pip. Node comes from `web/.nvmrc`.
 > - **Plans live in `docs/history/`.** There is no `docs/superpowers/plans/`.
 > - **Action SHAs** are re-resolved when each workflow is written, not copied from here.
 > - **actionlint** is a pinned release binary with a checksum, not `go run`.

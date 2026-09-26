@@ -1,7 +1,7 @@
 """Tests for tools/check_upload.py merge-one: getting one subreddit's new build ready to publish
 (the archive sync, docs/adr/0005), with no token. Run from the repo root:
 
-  uv run --with duckdb --with pytest pytest tools
+  uv run --with duckdb --with pytest --with zstandard pytest tools
 """
 
 import hashlib

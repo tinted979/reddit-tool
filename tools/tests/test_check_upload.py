@@ -1,6 +1,6 @@
 """Tests for tools/check_upload.py. Run from the repo root:
 
-  uv run --with duckdb --with pytest pytest tools
+  uv run --with duckdb --with pytest --with zstandard pytest tools
 """
 
 import json

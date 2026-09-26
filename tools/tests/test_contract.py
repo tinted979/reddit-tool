@@ -6,7 +6,7 @@ writes (columns, types, sort order, file names, the manifest) or FORMAT, these f
 the fixtures are rebuilt and the page is updated to match, instead of both test suites
 passing on stale fixtures while the live page breaks.
 
-Run from the repo root:  uv run --with duckdb --with pytest pytest tools
+Run from the repo root:  uv run --with duckdb --with pytest --with zstandard pytest tools
 """
 
 import json
